@@ -26,11 +26,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $user_type = $_POST['user_type'];
     
+    // Get service category for providers
+    $service_category_id = null;
+    if ($user_type == 'provider' && isset($_POST['service_category'])) {
+        $service_category_id = (int)$_POST['service_category'];
+    }
+    
     // Validate inputs
     if (empty($username) || empty($password) || empty($email) || empty($name)) {
         $error = "All fields are required";
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match";
+    } elseif ($user_type == 'provider' && empty($service_category_id)) {
+        $error = "Service providers must select a category";
     } else {
         // Check if username already exists
         $check_query = "SELECT * FROM users WHERE username = '$username' OR email = '$email'";
@@ -43,8 +51,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
             
             // Insert new user
-            $insert_query = "INSERT INTO users (username, password, email, user_type, name) 
-                            VALUES ('$username', '$hashed_password', '$email', '$user_type', '$name')";
+            if ($user_type == 'provider') {
+                $insert_query = "INSERT INTO users (username, password, email, user_type, name, service_category_id) 
+                                VALUES ('$username', '$hashed_password', '$email', '$user_type', '$name', $service_category_id)";
+            } else {
+                $insert_query = "INSERT INTO users (username, password, email, user_type, name) 
+                                VALUES ('$username', '$hashed_password', '$email', '$user_type', '$name')";
+            }
             
             if (mysqli_query($conn, $insert_query)) {
                 $success = "Registration successful! You can now login.";
@@ -112,13 +125,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                     <div class="form-group">
                         <label for="user_type">Register as</label>
-                        <select id="user_type" name="user_type" required>
+                        <select id="user_type" name="user_type" required onchange="toggleCategoryField()">
                             <option value="customer">Customer</option>
                             <option value="provider">Service Provider</option>
                         </select>
                     </div>
                     
+                    <div class="form-group" id="service-category-group" style="display: none;">
+                        <label for="service_category">Service Category</label>
+                        <select id="service_category" name="service_category">
+                            <option value="">-- Select Category --</option>
+                            <?php
+                            // Fetch service categories from database
+                            $category_query = "SELECT id, name FROM service_categories ORDER BY name ASC";
+                            $category_result = mysqli_query($conn, $category_query);
+                            
+                            while ($category = mysqli_fetch_assoc($category_result)) {
+                                echo '<option value="' . $category['id'] . '">' . $category['name'] . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
                     <button type="submit" class="btn">Register</button>
+                    
+                    <script>
+                        function toggleCategoryField() {
+                            var userType = document.getElementById('user_type').value;
+                            var categoryGroup = document.getElementById('service-category-group');
+                            
+                            if (userType === 'provider') {
+                                categoryGroup.style.display = 'block';
+                                document.getElementById('service_category').setAttribute('required', 'required');
+                            } else {
+                                categoryGroup.style.display = 'none';
+                                document.getElementById('service_category').removeAttribute('required');
+                            }
+                        }
+                        
+                        // Call the function initially to set the correct state
+                        document.addEventListener('DOMContentLoaded', toggleCategoryField);
+                    </script>
                 </form>
                 
                 <p class="form-footer">Already have an account? <a href="login.php">Login here</a></p>

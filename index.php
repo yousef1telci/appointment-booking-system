@@ -12,8 +12,9 @@ session_start();
 <body>
     <div class="container">
         <header>
-            <h1>Welcome to the Appointment Booking System</h1>
+            <h1>Online Appointment Booking System</h1>
             <nav>
+                <a href="browse_providers.php">Browse Providers</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <?php if ($_SESSION['user_type'] == 'customer'): ?>
                         <a href="user_dashboard.php">Dashboard</a>

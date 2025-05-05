@@ -50,8 +50,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['book_appointment'])) {
     }
 }
 
-// Get list of service providers
-$providers_query = "SELECT id, name FROM users WHERE user_type = 'provider' ORDER BY name ASC";
+// Get list of service providers with their categories
+$providers_query = "SELECT u.id, u.name, c.name as category_name 
+                   FROM users u
+                   LEFT JOIN service_categories c ON u.service_category_id = c.id
+                   WHERE u.user_type = 'provider' 
+                   ORDER BY u.name ASC";
 $providers_result = mysqli_query($conn, $providers_query);
 
 // Get available time slots if provider is selected
@@ -112,7 +116,7 @@ if (isset($_GET['provider_id']) && !empty($_GET['provider_id'])) {
                             <option value="">-- Select Provider --</option>
                             <?php while ($provider = mysqli_fetch_assoc($providers_result)): ?>
                                 <option value="<?php echo $provider['id']; ?>" <?php echo (isset($_GET['provider_id']) && $_GET['provider_id'] == $provider['id']) ? 'selected' : ''; ?>>
-                                    <?php echo $provider['name']; ?>
+                                    <?php echo $provider['name']; ?> (<?php echo $provider['category_name']; ?>)
                                 </option>
                             <?php endwhile; ?>
                         </select>

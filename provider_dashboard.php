@@ -10,6 +10,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'provider') {
 
 $provider_id = $_SESSION['user_id'];
 
+// Get provider's category information
+$category_query = "SELECT c.name as category_name 
+                  FROM users u
+                  JOIN service_categories c ON u.service_category_id = c.id
+                  WHERE u.id = $provider_id";
+$category_result = mysqli_query($conn, $category_query);
+$category_info = mysqli_fetch_assoc($category_result);
+
 // Get provider's appointments
 $appointments_query = "SELECT a.id, u.name as customer_name, v.date, v.time_start, v.time_end, a.booking_date, a.notes 
                        FROM appointments a 
@@ -49,6 +57,7 @@ $availability_result = mysqli_query($conn, $availability_query);
         <main>
             <section class="welcome-user">
                 <h2>Welcome, <?php echo $_SESSION['name']; ?>!</h2>
+                <p class="provider-category">Service Category: <strong><?php echo $category_info['category_name']; ?></strong></p>
             </section>
             
             <section class="appointments">
