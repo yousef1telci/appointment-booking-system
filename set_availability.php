@@ -106,9 +106,13 @@ $availability_result = mysqli_query($conn, $availability_query);
                     
                     <button type="submit" class="btn">Add Availability</button>
                 </form>
+
+               
+                  
+
             </section>
             
-            <section class="availability">
+            <section class="availability">  
                 <h3>Your Current Availability</h3>
                 
                 <?php if (mysqli_num_rows($availability_result) > 0): ?>

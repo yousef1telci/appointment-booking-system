@@ -50,6 +50,7 @@ $availability_result = mysqli_query($conn, $availability_query);
             <nav>
                 <a href="index.php">Home</a>
                 <a href="set_availability.php">Set Availability</a>
+                <a href="edit_profile.php">Edit Profile</a> <!-- Kisisel bilgiler yineleme linki-->
                 <a href="logout.php">Logout</a>
             </nav>
         </header>
