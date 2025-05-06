@@ -8,23 +8,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'customer') {
     exit();
 }
 
-// Get user's appointments
+// Get user's appointments with service category name
 $user_id = $_SESSION['user_id'];
 $query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v.time_end, 
-          a.booking_date, a.notes, a.status 
+          a.booking_date, a.notes, a.status, sc.name as service_name
           FROM appointments a 
           JOIN availability v ON a.availability_id = v.id 
           JOIN users u ON v.provider_id = u.id 
+          JOIN service_categories sc ON u.service_category_id = sc.id
           WHERE a.customer_id = $user_id 
           ORDER BY v.date ASC, v.time_start ASC";
 $result = mysqli_query($conn, $query);
 
 // Get user's canceled appointments, if wanted to display separately
 $canceled_query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v.time_end, 
-                  a.booking_date, a.notes 
+                  a.booking_date, a.notes, sc.name as service_name
                   FROM appointments a 
                   JOIN availability v ON a.availability_id = v.id 
                   JOIN users u ON v.provider_id = u.id 
+                  JOIN service_categories sc ON u.service_category_id = sc.id
                   WHERE a.customer_id = $user_id AND a.status = 'rejected' 
                   ORDER BY v.date ASC, v.time_start ASC";
 $canceled_result = mysqli_query($conn, $canceled_query);
@@ -73,6 +75,7 @@ $canceled_result = mysqli_query($conn, $canceled_query);
                         <thead>
                             <tr>
                                 <th>Service Provider</th>
+                                <th>Service Type</th>
                                 <th>Date</th>
                                 <th>Time</th>
                                 <th>Booking Date</th>
@@ -84,6 +87,7 @@ $canceled_result = mysqli_query($conn, $canceled_query);
                             <?php while ($row = mysqli_fetch_assoc($result)): ?>
                                 <tr>
                                     <td><?php echo $row['provider_name']; ?></td>
+                                    <td><?php echo $row['service_name']; ?></td>
                                     <td><?php echo date('M d, Y', strtotime($row['date'])); ?></td>
                                     <td><?php echo date('h:i A', strtotime($row['time_start'])) . ' - ' . date('h:i A', strtotime($row['time_end'])); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($row['booking_date'])); ?></td>
@@ -112,6 +116,7 @@ $canceled_result = mysqli_query($conn, $canceled_query);
                     <thead>
                         <tr>
                             <th>Service Provider</th>
+                            <th>Service Type</th>
                             <th>Date</th>
                             <th>Time</th>
                             <th>Booking Date</th>
@@ -122,6 +127,7 @@ $canceled_result = mysqli_query($conn, $canceled_query);
                         <?php while ($row = mysqli_fetch_assoc($canceled_result)): ?>
                             <tr>
                                 <td><?php echo $row['provider_name']; ?></td>
+                                <td><?php echo $row['service_name']; ?></td>
                                 <td><?php echo date('M d, Y', strtotime($row['date'])); ?></td>
                                 <td><?php echo date('h:i A', strtotime($row['time_start'])) . ' - ' . date('h:i A', strtotime($row['time_end'])); ?></td>
                                 <td><?php echo date('M d, Y', strtotime($row['booking_date'])); ?></td>
