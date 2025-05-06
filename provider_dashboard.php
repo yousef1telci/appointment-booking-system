@@ -10,6 +10,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'provider') {
 
 $provider_id = $_SESSION['user_id'];
 
+// Process appointment status updates
+if (isset($_POST['action']) && isset($_POST['appointment_id'])) {
+    $appointment_id = mysqli_real_escape_string($conn, $_POST['appointment_id']);
+    $status = '';
+    
+    if ($_POST['action'] == 'accept') {
+        $status = 'accepted';
+    } elseif ($_POST['action'] == 'reject') {
+        $status = 'rejected';
+    }
+    
+    if (!empty($status)) {
+        $update_query = "UPDATE appointments SET status = '$status' WHERE id = $appointment_id";
+        mysqli_query($conn, $update_query);
+        
+        // Redirect to avoid form resubmission
+        header("Location: provider_dashboard.php");
+        exit();
+    }
+}
+
 // Get provider's category information
 $category_query = "SELECT c.name as category_name 
                   FROM users u
@@ -19,7 +40,8 @@ $category_result = mysqli_query($conn, $category_query);
 $category_info = mysqli_fetch_assoc($category_result);
 
 // Get provider's appointments
-$appointments_query = "SELECT a.id, u.name as customer_name, v.date, v.time_start, v.time_end, a.booking_date, a.notes 
+$appointments_query = "SELECT a.id, u.name as customer_name, v.date, v.time_start, v.time_end, 
+                       a.booking_date, a.notes, a.status 
                        FROM appointments a 
                        JOIN availability v ON a.availability_id = v.id 
                        JOIN users u ON a.customer_id = u.id 
@@ -42,6 +64,21 @@ $availability_result = mysqli_query($conn, $availability_query);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provider Dashboard - Appointment Booking System</title>
     <link rel="stylesheet" href="assets/style.css">
+    <style>
+        .status-pending { color: #f39c12; font-weight: bold; }
+        .status-accepted { color: #27ae60; font-weight: bold; }
+        .status-rejected { color: #e74c3c; font-weight: bold; }
+        .action-buttons form { display: inline; }
+        .action-buttons button { 
+            padding: 5px 10px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .accept-btn { background-color: #27ae60; color: white; }
+        .reject-btn { background-color: #e74c3c; color: white; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -50,16 +87,21 @@ $availability_result = mysqli_query($conn, $availability_query);
             <nav>
                 <a href="index.php">Home</a>
                 <a href="set_availability.php">Set Availability</a>
-                <a href="edit_profile.php">Edit Profile</a> <!-- Kisisel bilgiler yineleme linki-->
+                <a href="edit_profile.php">Edit Profile</a>
                 <a href="logout.php">Logout</a>
             </nav>
+            
         </header>
         
         <main>
-            <section class="welcome-user">
-                <h2>Welcome, <?php echo $_SESSION['name']; ?>!</h2>
-                <p class="provider-category">Service Category: <strong><?php echo $category_info['category_name']; ?></strong></p>
-            </section>
+        <section class="welcome-user">
+             <h2>Welcome, <?php echo $_SESSION['name']; ?>!</h2>
+            <p class="provider-category">
+                <span>Service Category: </span>
+                <strong class="category-name"><?php echo $category_info['category_name']; ?></strong>
+            </p>
+        </section>
+
             
             <section class="appointments">
                 <h3>Your Booked Appointments</h3>
@@ -73,6 +115,8 @@ $availability_result = mysqli_query($conn, $availability_query);
                                 <th>Time</th>
                                 <th>Booking Date</th>
                                 <th>Notes</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -83,6 +127,29 @@ $availability_result = mysqli_query($conn, $availability_query);
                                     <td><?php echo date('h:i A', strtotime($row['time_start'])) . ' - ' . date('h:i A', strtotime($row['time_end'])); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($row['booking_date'])); ?></td>
                                     <td><?php echo $row['notes']; ?></td>
+                                    <td>
+                                        <?php 
+                                        $status = isset($row['status']) ? $row['status'] : 'pending';
+                                        $status_class = 'status-' . $status;
+                                        echo '<span class="' . $status_class . '">' . ucfirst($status) . '</span>';
+                                        ?>
+                                    </td>
+                                    <td class="action-buttons">
+                                        <?php if ($status == 'pending'): ?>
+                                            <form method="post" action="">
+                                                <input type="hidden" name="appointment_id" value="<?php echo $row['id']; ?>">
+                                                <input type="hidden" name="action" value="accept">
+                                                <button type="submit" class="accept-btn">Accept</button>
+                                            </form>
+                                            <form method="post" action="">
+                                                <input type="hidden" name="appointment_id" value="<?php echo $row['id']; ?>">
+                                                <input type="hidden" name="action" value="reject">
+                                                <button type="submit" class="reject-btn">Reject</button>
+                                            </form>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
