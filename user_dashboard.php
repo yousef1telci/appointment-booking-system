@@ -1,15 +1,16 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturum başlat
+require_once 'db/connection.php'; // Veritabanı bağlantısını dahil et
 
-// Check if user is logged in and is a customer
+// Kullanıcının giriş yapıp yapmadığını ve müşteri (customer) olup olmadığını kontrol et
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'customer') {
     header("Location: login.php");
     exit();
 }
 
-// Get user's appointments with service category name
-$user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id']; // Giriş yapan müşterinin ID'si
+
+// Müşterinin randevularını al ve hizmet kategorisi adını dahil et
 $query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v.time_end, 
           a.booking_date, a.notes, a.status, sc.name as service_name
           FROM appointments a 
@@ -17,10 +18,10 @@ $query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v.time_end
           JOIN users u ON v.provider_id = u.id 
           JOIN service_categories sc ON u.service_category_id = sc.id
           WHERE a.customer_id = $user_id 
-          ORDER BY v.date ASC, v.time_start ASC";
-$result = mysqli_query($conn, $query);
+          ORDER BY v.date ASC, v.time_start ASC"; // Randevuları tarih ve saat sırasına göre getir
+$result = mysqli_query($conn, $query); // Sorguyu çalıştır ve sonucu al
 
-// Get user's canceled appointments, if wanted to display separately
+// Müşterinin iptal edilmiş randevularını almak isterseniz, ayrı göstermek için
 $canceled_query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v.time_end, 
                   a.booking_date, a.notes, sc.name as service_name
                   FROM appointments a 
@@ -28,9 +29,11 @@ $canceled_query = "SELECT a.id, u.name as provider_name, v.date, v.time_start, v
                   JOIN users u ON v.provider_id = u.id 
                   JOIN service_categories sc ON u.service_category_id = sc.id
                   WHERE a.customer_id = $user_id AND a.status = 'rejected' 
-                  ORDER BY v.date ASC, v.time_start ASC";
-$canceled_result = mysqli_query($conn, $canceled_query);
+                  ORDER BY v.date ASC, v.time_start ASC"; // İptal edilen randevuları getir
+$canceled_result = mysqli_query($conn, $canceled_query); // İptal edilen randevuların sorgusunu çalıştır
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">

@@ -1,63 +1,68 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturumu başlat
+require_once 'db/connection.php'; // Veritabanı bağlantısını dahil et
 
-// Check if user is logged in and is a service provider
+// Kullanıcının oturum açmış ve sağlayıcı (provider) olup olmadığını kontrol et
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'provider') {
     header("Location: login.php");
     exit();
 }
 
-$provider_id = $_SESSION['user_id'];
-$error = "";
-$success = "";
+$provider_id = $_SESSION['user_id']; // Giriş yapan sağlayıcının ID'si
+$error = "";   // Hata mesajı
+$success = ""; // Başarı mesajı
 
-// Process form submission
+// Form gönderildiyse işle
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Formdan gelen verileri al ve SQL enjeksiyonuna karşı güvenli hale getir
     $date = mysqli_real_escape_string($conn, $_POST['date']);
     $time_start = mysqli_real_escape_string($conn, $_POST['time_start']);
     $time_end = mysqli_real_escape_string($conn, $_POST['time_end']);
-    
-    // Validate inputs
+
+    // Girdi doğrulaması yap
     if (empty($date) || empty($time_start) || empty($time_end)) {
-        $error = "All fields are required";
+        $error = "Tüm alanlar zorunludur";
     } elseif (strtotime($time_start) >= strtotime($time_end)) {
-        $error = "End time must be after start time";
+        $error = "Bitiş saati, başlangıç saatinden sonra olmalıdır";
     } elseif (strtotime($date) < strtotime(date('Y-m-d'))) {
-        $error = "Date cannot be in the past";
+        $error = "Geçmiş tarihler seçilemez";
     } else {
-        // Check for overlapping time slots
+        // Zaman çakışması olup olmadığını kontrol et
         $check_query = "SELECT * FROM availability 
                         WHERE provider_id = $provider_id 
                         AND date = '$date' 
-                        AND ((time_start <= '$time_start' AND time_end > '$time_start') 
+                        AND (
+                            (time_start <= '$time_start' AND time_end > '$time_start') 
                             OR (time_start < '$time_end' AND time_end >= '$time_end') 
-                            OR (time_start >= '$time_start' AND time_end <= '$time_end'))";
+                            OR (time_start >= '$time_start' AND time_end <= '$time_end')
+                        )";
         $check_result = mysqli_query($conn, $check_query);
-        
+
         if (mysqli_num_rows($check_result) > 0) {
-            $error = "This time slot overlaps with an existing one";
+            $error = "Bu zaman aralığı mevcut bir zaman dilimiyle çakışıyor";
         } else {
-            // Insert new availability
+            // Yeni uygunluk zaman dilimini ekle
             $insert_query = "INSERT INTO availability (provider_id, date, time_start, time_end) 
-                            VALUES ($provider_id, '$date', '$time_start', '$time_end')";
-            
+                             VALUES ($provider_id, '$date', '$time_start', '$time_end')";
+
             if (mysqli_query($conn, $insert_query)) {
-                $success = "Availability slot added successfully!";
+                $success = "Uygunluk başarıyla eklendi!";
             } else {
-                $error = "Failed to add availability: " . mysqli_error($conn);
+                $error = "Uygunluk eklenemedi: " . mysqli_error($conn);
             }
         }
     }
 }
 
-// Get provider's current availability
+// Mevcut uygunlukları getir
 $availability_query = "SELECT id, date, time_start, time_end, is_booked 
-                      FROM availability 
-                      WHERE provider_id = $provider_id 
-                      ORDER BY date ASC, time_start ASC";
+                       FROM availability 
+                       WHERE provider_id = $provider_id 
+                       ORDER BY date ASC, time_start ASC";
 $availability_result = mysqli_query($conn, $availability_query);
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">

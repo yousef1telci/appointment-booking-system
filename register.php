@@ -1,56 +1,55 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturumu başlat
+require_once 'db/connection.php'; // Veritabanı bağlantısını dahil et
 
-// Check if user is already logged in
+// Eğer kullanıcı zaten giriş yapmışsa, kullanıcı tipine göre yönlendir
 if (isset($_SESSION['user_id'])) {
-    // Redirect based on user type
     if ($_SESSION['user_type'] == 'customer') {
-        header("Location: user_dashboard.php");
+        header("Location: user_dashboard.php"); // Müşteri paneline yönlendir
     } else {
-        header("Location: provider_dashboard.php");
+        header("Location: provider_dashboard.php"); // Sağlayıcı paneline yönlendir
     }
     exit();
 }
 
-$error = "";
-$success = "";
+$error = "";   // Hata mesajı için değişken
+$success = ""; // Başarı mesajı için değişken
 
-// Process form submission
+// Form gönderilmişse işle
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Get form data
+    // Form verilerini al
     $username = mysqli_real_escape_string($conn, $_POST['username']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $user_type = $_POST['user_type'];
-    
-    // Get service category for providers
+    $user_type = $_POST['user_type']; // 'customer' veya 'provider'
+
+    // Eğer kullanıcı türü 'provider' ise, hizmet kategorisini al
     $service_category_id = null;
     if ($user_type == 'provider' && isset($_POST['service_category'])) {
         $service_category_id = (int)$_POST['service_category'];
     }
-    
-    // Validate inputs
+
+    // Girdi doğrulaması
     if (empty($username) || empty($password) || empty($email) || empty($name)) {
-        $error = "All fields are required";
+        $error = "Tüm alanlar zorunludur";
     } elseif ($password !== $confirm_password) {
-        $error = "Passwords do not match";
+        $error = "Şifreler uyuşmuyor";
     } elseif ($user_type == 'provider' && empty($service_category_id)) {
-        $error = "Service providers must select a category";
+        $error = "Hizmet sağlayıcılar bir kategori seçmelidir";
     } else {
-        // Check if username already exists
+        // Kullanıcı adı veya e-posta daha önce alınmış mı kontrol et
         $check_query = "SELECT * FROM users WHERE username = '$username' OR email = '$email'";
         $check_result = mysqli_query($conn, $check_query);
-        
+
         if (mysqli_num_rows($check_result) > 0) {
-            $error = "Username or email already exists";
+            $error = "Kullanıcı adı veya e-posta zaten kullanılıyor";
         } else {
-            // Hash password for security
+            // Şifreyi güvenli hale getir (hash)
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            
-            // Insert new user
+
+            // Kullanıcıyı veritabanına ekle
             if ($user_type == 'provider') {
                 $insert_query = "INSERT INTO users (username, password, email, user_type, name, service_category_id) 
                                 VALUES ('$username', '$hashed_password', '$email', '$user_type', '$name', $service_category_id)";
@@ -58,16 +57,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $insert_query = "INSERT INTO users (username, password, email, user_type, name) 
                                 VALUES ('$username', '$hashed_password', '$email', '$user_type', '$name')";
             }
-            
+
+            // Kayıt işlemi başarılıysa
             if (mysqli_query($conn, $insert_query)) {
-                $success = "Registration successful! You can now login.";
+                $success = "Kayıt başarılı! Giriş yapabilirsiniz.";
             } else {
-                $error = "Registration failed: " . mysqli_error($conn);
+                $error = "Kayıt başarısız oldu: " . mysqli_error($conn);
             }
         }
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

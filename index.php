@@ -126,7 +126,7 @@ session_start();
                 </section>
             <?php endif; ?>
             
-            <!-- New Services Showcase Section -->
+            <!-- New Services Show case Section -->
             <section class="services-showcase">
                 <h2>Our Available Services</h2>
                 <div class="services-grid">

@@ -1,13 +1,13 @@
 <?php
-session_start();
+session_start(); // Oturumu başlatır (aktif oturumu yönetmek için gerekir)
 
-// Clear all session variables
+// Tüm oturum değişkenlerini temizler
 $_SESSION = array();
 
-// Destroy the session
+// Oturumu tamamen sonlandırır
 session_destroy();
 
-// Redirect to home page
+// Anasayfaya yönlendirir
 header("Location: index.php");
-exit();
+exit(); // Kodun devamının çalışmaması için çıkış yapılır
 ?>

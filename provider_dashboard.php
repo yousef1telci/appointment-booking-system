@@ -1,45 +1,47 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturumu başlatır
+require_once 'db/connection.php'; // Veritabanı bağlantısını dahil eder
 
-// Check if user is logged in and is a service provider
+// Kullanıcının giriş yapıp yapmadığını ve sağlayıcı (provider) olup olmadığını kontrol eder
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'provider') {
-    header("Location: login.php");
-    exit();
+    header("Location: login.php"); // Giriş sayfasına yönlendir
+    exit(); // Kodun devamını çalıştırmadan çık
 }
 
-$provider_id = $_SESSION['user_id'];
+$provider_id = $_SESSION['user_id']; // Oturumdan sağlayıcı ID'si alınır
 
-// Process appointment status updates
+// Randevu durumu güncelleme işlemi yapılacaksa
 if (isset($_POST['action']) && isset($_POST['appointment_id'])) {
-    $appointment_id = mysqli_real_escape_string($conn, $_POST['appointment_id']);
-    $status = '';
+    $appointment_id = mysqli_real_escape_string($conn, $_POST['appointment_id']); // Güvenli şekilde randevu ID'si alınır
+    $status = ''; // Durum değişkeni tanımlanır
     
+    // Gelen aksiyona göre durum belirlenir
     if ($_POST['action'] == 'accept') {
-        $status = 'accepted';
+        $status = 'accepted'; // Kabul edildi
     } elseif ($_POST['action'] == 'reject') {
-        $status = 'rejected';
+        $status = 'rejected'; // Reddedildi
     }
     
+    // Eğer geçerli bir durum varsa, randevunun durumu güncellenir
     if (!empty($status)) {
         $update_query = "UPDATE appointments SET status = '$status' WHERE id = $appointment_id";
-        mysqli_query($conn, $update_query);
+        mysqli_query($conn, $update_query); // Veritabanında güncelleme yapılır
         
-        // Redirect to avoid form resubmission
+        // Formun yeniden gönderilmesini önlemek için sayfa yenilenir
         header("Location: provider_dashboard.php");
         exit();
     }
 }
 
-// Get provider's category information
+// Sağlayıcının hizmet kategorisi bilgisi alınır
 $category_query = "SELECT c.name as category_name 
                   FROM users u
                   JOIN service_categories c ON u.service_category_id = c.id
                   WHERE u.id = $provider_id";
 $category_result = mysqli_query($conn, $category_query);
-$category_info = mysqli_fetch_assoc($category_result);
+$category_info = mysqli_fetch_assoc($category_result); // Tek bir satır alınır
 
-// Get provider's appointments
+// Sağlayıcının randevuları çekilir
 $appointments_query = "SELECT a.id, u.name as customer_name, v.date, v.time_start, v.time_end, 
                        a.booking_date, a.notes, a.status 
                        FROM appointments a 
@@ -49,13 +51,15 @@ $appointments_query = "SELECT a.id, u.name as customer_name, v.date, v.time_star
                        ORDER BY v.date ASC, v.time_start ASC";
 $appointments_result = mysqli_query($conn, $appointments_query);
 
-// Get provider's availability slots
+// Sağlayıcının uygunluk zaman dilimleri (availability) çekilir
 $availability_query = "SELECT id, date, time_start, time_end, is_booked 
                       FROM availability 
                       WHERE provider_id = $provider_id 
                       ORDER BY date ASC, time_start ASC";
 $availability_result = mysqli_query($conn, $availability_query);
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">

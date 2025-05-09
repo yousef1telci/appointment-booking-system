@@ -1,27 +1,31 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturumu başlatır (session kullanımı için gereklidir)
+require_once 'db/connection.php'; // Veritabanı bağlantı dosyasını dahil eder
 
+// Eğer kullanıcı oturum açmamışsa, login sayfasına yönlendir
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id']; // Oturumdan kullanıcı ID'si alınır
 
+// Kullanıcının kullanıcı adı, e-posta ve ad bilgilerini veritabanından çekmek için SQL sorgusu hazırlanır
 $sql = "SELECT username, email, name FROM users WHERE id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt = $conn->prepare($sql); // Sorgu hazırlanır
+$stmt->bind_param("i", $user_id); // Sorguya kullanıcı ID'si parametre olarak bağlanır (integer olarak)
+$stmt->execute(); // Sorgu çalıştırılır
+$result = $stmt->get_result(); // Sonuç alınır
 
+// Eğer kullanıcı bulunamazsa hata mesajı gösterilir
 if ($result->num_rows !== 1) {
     echo "Kullanıcı bulunamadı.";
     exit();
 }
 
-$user = $result->fetch_assoc();
+$user = $result->fetch_assoc(); // Kullanıcı bilgileri dizi olarak alınır
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

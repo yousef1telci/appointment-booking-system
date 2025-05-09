@@ -1,55 +1,57 @@
 <?php
-session_start();
-require_once 'db/connection.php';
+session_start(); // Oturumu başlatır
+require_once 'db/connection.php'; // Veritabanı bağlantı dosyasını dahil eder
 
-// Check if user is already logged in
+// Kullanıcı zaten giriş yapmışsa, kullanıcı tipine göre yönlendirme yapılır
 if (isset($_SESSION['user_id'])) {
-    // Redirect based on user type
+    // Eğer kullanıcı tipi "customer" ise müşteri paneline yönlendir
     if ($_SESSION['user_type'] == 'customer') {
         header("Location: user_dashboard.php");
-    } else {
+    } else { // Aksi takdirde sağlayıcı paneline yönlendir
         header("Location: provider_dashboard.php");
     }
-    exit();
+    exit(); // Kodun devamının çalışmaması için çıkış yapılır
 }
 
-$error = "";
+$error = ""; // Hata mesajı değişkeni tanımlanır
 
-// Process login form submission
+// Eğer form POST yöntemiyle gönderildiyse giriş işlemleri başlatılır
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
-    $password = $_POST['password'];
+    $username = mysqli_real_escape_string($conn, $_POST['username']); // Kullanıcı adı güvenli şekilde alınır
+    $password = $_POST['password']; // Şifre alınır (doğrudan, çünkü hash kontrolü yapılacak)
     
-    // Validate login credentials
+    // Kullanıcı adına göre kullanıcıyı veritabanında arar
     $query = "SELECT * FROM users WHERE username = '$username'";
     $result = mysqli_query($conn, $query);
     
+    // Eğer kullanıcı bulunduysa
     if (mysqli_num_rows($result) == 1) {
-        $user = mysqli_fetch_assoc($result);
+        $user = mysqli_fetch_assoc($result); // Kullanıcı bilgileri alınır
         
-        // Verify password
+        // Şifre doğrulaması yapılır (hash ile)
         if (password_verify($password, $user['password'])) {
-            // Set session variables
+            // Giriş başarılıysa oturum bilgileri ayarlanır
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
             $_SESSION['name'] = $user['name'];
             
-            // Redirect based on user type
+            // Kullanıcı tipine göre yönlendirme yapılır
             if ($user['user_type'] == 'customer') {
                 header("Location: user_dashboard.php");
             } else {
                 header("Location: provider_dashboard.php");
             }
-            exit();
+            exit(); // Yönlendirme sonrası çıkış yapılır
         } else {
-            $error = "Invalid password";
+            $error = "Invalid password"; // Şifre uyuşmuyorsa hata mesajı
         }
     } else {
-        $error = "Username not found";
+        $error = "Username not found"; // Kullanıcı adı veritabanında bulunamadıysa
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
